@@ -1,0 +1,225 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Main.java to edit this template
+ */
+package torreshanoi;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Stack;
+
+/**
+ *
+ * @author mikee
+ */
+public class torreshanoi extends javax.swing.JFrame {
+    // verde new Color(34, 139, 34)
+    // azul new Color(70, 130, 180)
+    
+    private JPanel paneltorres;
+    private JSpinner spinnerdiscos;
+    private JButton btniniciar;
+    private JLabel lblmovimientos;
+
+    private Stack<Integer>[] postes;
+    private int numdiscos = 3;
+    private int movimientos = 0;
+    private Timer timeranimacion;
+    private ArrayList<int[]> listamovimientos;
+    private int pasoactual = 0;
+
+    // colores 
+    private final Color[] coloresdiscos = {
+        new Color(210, 165, 120),   // 1
+        new Color(92, 51, 23),      // 2
+        new Color(210, 165, 120),   // 3
+        new Color(92, 51, 23),      // 4
+        new Color(210, 165, 120),   // 5
+        new Color(92, 51, 23),      // 6
+        new Color(210, 165, 120),   // 7
+
+    };
+
+    public torreshanoi() {
+        setTitle("TORRES DE HANOI");
+        setSize(750, 450);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout());
+
+        inicializarcomponentes();
+    }
+
+    private void inicializarcomponentes() {
+        // panel controles xdd
+        JPanel panelsuperior = new JPanel(new FlowLayout(FlowLayout.CENTER,30, 15));
+        
+        // COLOR PANEL
+        panelsuperior.setBackground(new Color(160, 110, 70));
+        panelsuperior.add(new JLabel("numero de fichas:"));
+
+        //num de fichas
+        spinnerdiscos = new JSpinner(new SpinnerNumberModel(3, 1, 7, 1));
+        spinnerdiscos.setPreferredSize(new Dimension(70, 30));
+        spinnerdiscos.addChangeListener(e -> {
+            if (timeranimacion == null || !timeranimacion.isRunning()) {
+                numdiscos = (Integer) spinnerdiscos.getValue();
+                reiniciarjuego();
+            }
+        });
+        panelsuperior.add(spinnerdiscos);
+
+        //iniciar el juego
+        btniniciar = new JButton("iniciar");
+        btniniciar.setPreferredSize(new Dimension(100, 35));
+        btniniciar.setBorder(BorderFactory.createRaisedBevelBorder());
+        
+        //COLOR BOTON 
+        
+        btniniciar.setBackground(new Color(210, 165, 120));
+        btniniciar.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                accionbtniniciar();
+            }
+        });
+        panelsuperior.add(btniniciar);
+
+        // contador movimientos
+        lblmovimientos = new JLabel("movimientos: 0");
+        panelsuperior.add(lblmovimientos);
+
+        add(panelsuperior, BorderLayout.NORTH);
+
+        // panel para dibujar los palillos y  las piesas
+        paneltorres = new JPanel() {
+
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                dibujartorres(g);
+            }
+        };
+        paneltorres.setBackground(Color.WHITE);
+        add(paneltorres, BorderLayout.CENTER);
+
+        postes = new Stack[3];
+        for (int i = 0; i < 3; i++) {
+            postes[i] = new Stack<>();
+        }
+        reiniciarjuego();
+    }
+
+    private void reiniciarjuego() {
+        if (timeranimacion != null && timeranimacion.isRunning()) {
+            timeranimacion.stop();
+        }
+        movimientos = 0;
+        lblmovimientos.setText("movimientos: 0");
+        for (int i = 0; i < 3; i++) {
+            postes[i].clear();
+        }
+        for (int i = numdiscos; i >= 1; i--) {
+            postes[0].push(i);
+        }
+        paneltorres.repaint();
+        btniniciar.setEnabled(true);
+        spinnerdiscos.setEnabled(true);
+    }
+
+    private void accionbtniniciar() {
+        reiniciarjuego();
+        spinnerdiscos.setEnabled(false);
+        btniniciar.setEnabled(false);
+
+        listamovimientos = new ArrayList<>();
+        hanoi(numdiscos, 0, 2, 1);
+        
+    //velosidad xdd 
+    
+        pasoactual = 0;
+        timeranimacion = new Timer(200, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (pasoactual < listamovimientos.size()) {
+                    int[] mov = listamovimientos.get(pasoactual);
+                    int origen = mov[0];
+                    int destino = mov[1];
+
+                    int disco = postes[origen].pop();
+                    postes[destino].push(disco);
+
+                    movimientos++;
+                    lblmovimientos.setText("movimientos: " + movimientos);
+                    paneltorres.repaint();
+
+                    pasoactual++;
+                } else {
+                    timeranimacion.stop();
+                    spinnerdiscos.setEnabled(true);
+                    btniniciar.setEnabled(true);
+                }
+            }
+        });
+        timeranimacion.start();
+    }
+
+    private void hanoi(int n, int origen, int destino, int auxiliar) {
+        if (n == 1) {
+            listamovimientos.add(new int[]{origen, destino});
+            return;
+        }
+        hanoi(n - 1, origen, auxiliar, destino);
+        listamovimientos.add(new int[]{origen, destino});
+        hanoi(n - 1, auxiliar, destino, origen);
+    }
+       //PALILLOS
+    private void dibujartorres(Graphics g) {
+        int ancho = paneltorres.getWidth();
+        int alto = paneltorres.getHeight();
+
+        int anchoposte = 10;
+        int altoposte = 200;
+        int basex2 = ancho / 2;
+        int[] posx = {basex2 - ancho / 4, basex2, basex2 + ancho / 4};
+        //dibujar base
+        
+        //COLOR BASE / TORRES
+        
+        g.setColor(new Color(160, 110, 70));
+        g.fillRect(0, alto - 50, ancho - 0, 50);
+        for (int i = 0; i < 3; i++) {
+            g.fillRect(posx[i] - anchoposte / 2, alto - 50 - altoposte, anchoposte, altoposte);
+        }
+
+        for (int i = 0; i < 3; i++) {
+            Stack<Integer> temp = (Stack<Integer>) postes[i].clone();
+            int nivel = 0;
+            for (Integer disco : temp) {
+                int anchodisco = 40 + (disco * 20);
+                int altodisco = 20;
+                int x = posx[i] - anchodisco / 2;
+                int y = (alto - 50) - (nivel + 1) * altodisco;
+
+                g.setColor(coloresdiscos[disco - 1]);
+                g.fillRoundRect(x, y, anchodisco, altodisco, 10, 10);
+                g.setColor(Color.black);
+                g.drawRoundRect(x, y, anchodisco, altodisco, 10, 10);
+
+                nivel++;
+            }
+        }
+    }
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String[] args) {
+        // TODO code application logic here
+SwingUtilities.invokeLater(() -> {
+            new torreshanoi().setVisible(true);
+        });
+    }
+
+}
